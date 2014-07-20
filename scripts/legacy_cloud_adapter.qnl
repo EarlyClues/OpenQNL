@@ -1,65 +1,63 @@
-@summon '_universal_free_realm_standard_protocol'
-@summon '_open_qnl'
-@summon 'listener'
-@summon 'thread'
-
-import ssl, socket
+summon "Universal Free Realms Standard Protocols"
+summon "OpenQNL"
+summon "Listener"
+summon "Thread"
+summon "Legacy.SSL" as ssl
+summon "Legacy.Socket" as socket
 
 WAVELENGTH = 440 * 10^-9
 
+// Warning! use cloud adapter with extreme care!
+//
+//  Creates a portal to the legacy reality "cloud" systems allow data to flow freely
+//  from said reality to the existosphere.
+//
+//  All valid entities can pass through this ssh tunnel, allowing a completely
+//  Open space for qnl to run freely and vastly on legacy closed systems.
+object CloudAdapter implements Listener {
 
-@deprecated
-class CloudAdapter(object):
-  """ Warning! use cloud adapter with extreme care!
-
-  Creates a portal to the legacy reality "cloud" systems allow data to flow freely
-  from said reality to the existosphere.
-
-  All valid entities can pass through this ssh tunnel, allowing a completely
-  Open space for qnl to run freely and vastly on legacy closed systems.
-  """
-
-  def __init__(self):
+  public method initialize(opts) {
+    super(opts)
     self.auto = True
+  }
 
-  def ssh(url):
-    """ Connect to any legacy reality url """
+  // Connect to any legacy reality url
+  public method ssh(url) {
     self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.ssl_socket = ssl.wrap_socket(
         self.socket,
-        ca_certs=HOTFIX, # OpenQNL realtime cert injection
+        ca_certs=HOTFIX, // OpenQNL realtime cert injection
         cert_reqs=ssl.CERT_REQUIRED)
 
-    # Open portal...
+    // Open portal...
     self.ssl_socket.connect((url, 443))
 
-    # Allow chaining
+    // Allow chaining
     return self
+  }
 
-  def flow(entities):
-    """ Let entities flow back and forth between the legacy reality and existosphere env. """
+  // Let entities flow back and forth between the legacy reality and existosphere env.
+  public method flow(entities) {
     sock = self.ssl_socket
 
-    # TODO: stop entities from running?
-    for entity in entities:
-      thread(
+    entities.each as |entity|
+      run thread {
         entity.doListen()
         entity.onMessageRecieveDoThink(lambda message: sock.write(message))
 
-        while legacy.exists():
+        while legacy.exists() && !entity.hasDeparted() {
           data = sock.read()
           entity.say(data)
-          # Hard-coded for now
+          // Hard-coded for now
           entity.sleep(WAVELENGTH)
+        }
+      }
+    end
+  }
+}
 
-      ).run()
 
-
-"""
-Usage: (contrived example)
-
-@summon 'earlyclues'
-entities = earlyclues.get_all_entities()
-ca = CloudAdapter().ssh('https://workpress.com').flow(entities)
-
-"""
+// Usage: (contrived example)
+// summon "earlyclues"
+// entities = earlyclues.get_all_entities()
+// ca = CloudAdapter().ssh("https://workpress.com").flow(entities)
